@@ -231,7 +231,7 @@ adb install -r target_patched.apk
 
 ## Legal Notice
 
-This tool is intended for **authorised security testing** of applications you
+This tool is intended for **authorized security testing** of applications you
 own or have explicit written permission to test. Unauthorised interception of
 network traffic may violate the Computer Fraud and Abuse Act (CFAA), GDPR,
 and other applicable laws. The authors assume no liability for misuse.

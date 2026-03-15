@@ -151,7 +151,8 @@ function dumpDartOffsets(flutterMod) {
       onMatch(matchAddr) {
         // Validate byte 0 is in range C0-DF (register W0-W30)
         const b0 = readU8Safe(matchAddr);
-        if (b0 === null || b0 < 0xC0 || b0 > 0xDF) return;
+        // MOVZ W<n>, #0x86 encodes byte0 as 0xC0|n for n=0..15 ([C0-CF])
+        if (b0 === null || b0 < 0xC0 || b0 > 0xCF) return;
 
         const relMatch = matchAddr.sub(base).toInt32();
         rows.push({
@@ -278,7 +279,8 @@ function patchByPatternArm64(mod) {
   Memory.scan(mod.base, mod.size, "?? 10 80 52", {
     onMatch(matchAddr) {
       const b0 = readU8Safe(matchAddr);
-      if (b0 === null || b0 < 0xC0 || b0 > 0xDF) return;
+      // MOVZ W<n>, #0x86 encodes byte0 as 0xC0|n for n=0..15 ([C0-CF])
+      if (b0 === null || b0 < 0xC0 || b0 > 0xCF) return;
 
       const prologue = findArm64Prologue(matchAddr, mod.base);
       if (!prologue) return;
