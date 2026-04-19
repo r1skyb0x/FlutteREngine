@@ -262,9 +262,6 @@ class TestIdentifyVersion(unittest.TestCase):
 
 class TestWalkBack(unittest.TestCase):
 
-    import re as _re
-    _PAT = __import__('re').compile(b'\xAA')
-
     def setUp(self):
         import re
         self.pat = re.compile(b'\xAA')

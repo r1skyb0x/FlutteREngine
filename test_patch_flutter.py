@@ -245,9 +245,6 @@ class TestIdentifyFlutterVersion(unittest.TestCase):
 
 class TestWalkBackToPrologue(unittest.TestCase):
 
-    import re as _re
-    _PROLOGUE = __import__('re').compile(rb'\xFD\x7B[\xBC-\xBF]\xA9')
-
     def setUp(self):
         import re
         self.prologue_re = re.compile(rb'\xFD\x7B[\xBC-\xBF]\xA9')
