@@ -73,7 +73,7 @@ PATCH_X86 = bytes([0x31, 0xC0,   # XOR EAX, EAX
 _ARM64_MOVZ_0x86 = re.compile(rb'[\xC0-\xCF]\x10\x80\x52')
 _ARM64_MOVZ_0x14 = re.compile(rb'[\x80-\x8F]\x02\x80\x52')
 # ARM64 standard function prologue:  STP X29, X30, [SP, #-N]!
-_ARM64_PROLOGUE = re.compile(rb'\xFD\x7B[\xBC-\xBF]\xA9')
+_ARM64_PROLOGUE = re.compile(rb'\xFD\x7B..\xA9')
 # ARM32 Thumb PUSH {..., LR}
 _ARM32T_PUSH_LR = re.compile(rb'\x2D\xE9[\x00-\xFF][\x40-\x7F]')
 # x86/x86_64 function prologue: PUSH RBP / PUSH EBP  (0x55)
