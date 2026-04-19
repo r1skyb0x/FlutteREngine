@@ -86,11 +86,28 @@ function patchByExport(module) {
     log("Export ssl_verify_peer_cert not found (stripped build)");
     return false;
   }
-  const arch  = currentArch();
-  const patch = CONFIG.patches[arch] || CONFIG.patches["arm64"];
-  log(`Strategy 1: found ssl_verify_peer_cert export @ ${sym}`);
-  if (writePatch(sym, patch)) {
-    log(`  Patched (${arch}): ${bytesToHex(patch)}`);
+  const arch = currentArch();
+  let patchArch = arch;
+  let patchAddress = sym;
+
+  // On 32-bit ARM, many builds use Thumb mode. Thumb function pointers
+  // typically have bit 0 set; clear it for the actual code address and
+  // select the Thumb patch bytes.
+  if (arch === "arm") {
+    try {
+      if (!sym.isNull() && sym.and(1).toInt32() === 1) {
+        patchArch = "thumb";
+        patchAddress = sym.sub(1); // clear Thumb bit to get real code address
+      }
+    } catch (e) {
+      warn(`Failed to determine ARM/Thumb mode for ${sym}: ${e.message}`);
+    }
+  }
+
+  const patch = CONFIG.patches[patchArch] || CONFIG.patches["arm64"];
+  log(`Strategy 1: found ssl_verify_peer_cert export @ ${patchAddress} (arch=${patchArch})`);
+  if (writePatch(patchAddress, patch)) {
+    log(`  Patched (${patchArch}): ${bytesToHex(patch)}`);
     return true;
   }
   return false;
