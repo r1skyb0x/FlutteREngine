@@ -131,39 +131,49 @@ function patchByPatternArm64(module) {
   log("Strategy 2: scanning for MOVZ W*, #0x86 (SSL error constant) …");
 
   let found = false;
-  Memory.scan(module.base, module.size, pattern, {
-    onMatch(matchAddr) {
-      // Walk backwards up to 0x800 bytes to find STP X29,X30 prologue
-      const searchRange = 0x800;
-      const searchStart = matchAddr.sub(searchRange);
-      // Scan backwards (Frida scans forward, so we collect all matches
-      // in the window and take the last one = nearest to our anchor)
-      let lastPrologue = null;
-      for (let off = 0; off < searchRange; off += 4) {
-        const candidate = searchStart.add(off);
-        try {
-          const b0 = candidate.readU8();
-          const b1 = candidate.add(1).readU8();
-          const b3 = candidate.add(3).readU8();
-          // STP X29, X30 : FD 7B ?? A9
-          if (b0 === 0xFD && b1 === 0x7B && b3 === 0xA9) {
-            lastPrologue = candidate;
-          }
-        } catch (_) { /* unreadable page */ }
-      }
-
-      if (lastPrologue) {
-        log(`  Match @ ${matchAddr}  →  prologue @ ${lastPrologue}`);
-        if (writePatch(lastPrologue, CONFIG.patches.arm64)) {
-          log(`  Patched: ${bytesToHex(CONFIG.patches.arm64)}`);
-          found = true;
+  const execRanges = module.enumerateRanges('r-x');
+  for (const range of execRanges) {
+    Memory.scan(range.base, range.size, pattern, {
+      onMatch(matchAddr) {
+        // Walk backwards up to 0x800 bytes to find STP X29,X30 prologue
+        const searchRange = 0x800;
+        let searchStart = matchAddr.sub(searchRange);
+        // Clamp so we never search below the module base
+        if (searchStart.compare(module.base) < 0) {
+          searchStart = module.base;
         }
-        return "stop"; // patch first occurrence; remove if multiple needed
-      }
-    },
-    onComplete() {},
-    onError(reason) { warn(`scan error: ${reason}`); },
-  });
+        // Scan backwards (Frida scans forward, so we collect all matches
+        // in the window and take the last one = nearest to our anchor)
+        let lastPrologue = null;
+        for (let off = 0; off < searchRange; off += 4) {
+          const candidate = searchStart.add(off);
+          try {
+            const b0 = candidate.readU8();
+            const b1 = candidate.add(1).readU8();
+            const b3 = candidate.add(3).readU8();
+            // STP X29, X30 : FD 7B ?? A9
+            if (b0 === 0xFD && b1 === 0x7B && b3 === 0xA9) {
+              lastPrologue = candidate;
+            }
+          } catch (_) { /* unreadable page */ }
+        }
+
+        if (lastPrologue) {
+          log(`  Match @ ${matchAddr}  →  prologue @ ${lastPrologue}`);
+          if (writePatch(lastPrologue, CONFIG.patches.arm64)) {
+            log(`  Patched: ${bytesToHex(CONFIG.patches.arm64)}`);
+            found = true;
+          }
+          return "stop"; // patch first occurrence; remove if multiple needed
+        }
+      },
+      onComplete() {},
+      onError(reason) { warn(`scan error: ${reason}`); },
+    });
+    if (found) {
+      break;
+    }
+  }
 
   return found;
 }
