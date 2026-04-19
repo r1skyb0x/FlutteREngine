@@ -346,21 +346,25 @@ function hookJavaTrustManager() {
     } catch (_) { /* not on all devices */ }
 
     // Generic TrustManager implementations
+    // Use the async callback API (compatible with Frida 16+).
+    // Java.enumerateLoadedClassesSync() was removed in Frida 16.x.
     try {
-      const classes = Java.enumerateLoadedClassesSync()
-                         .filter(c => /TrustManager/i.test(c));
-      for (const cls of classes) {
-        try {
-          const Cls = Java.use(cls);
-          if (Cls.checkServerTrusted) {
-            Cls.checkServerTrusted.overload(
-              "[Ljava.security.cert.X509Certificate;", "java.lang.String"
-            ).implementation = function () { /* noop → trust all */ };
-            ok(`Strategy 4: hooked ${cls}.checkServerTrusted`);
-          }
-        } catch (_) { /* skip */ }
-      }
-    } catch (_) { /* enumerateLoadedClassesSync unavailable */ }
+      Java.enumerateLoadedClasses({
+        onMatch(name) {
+          if (!/TrustManager/i.test(name)) return;
+          try {
+            const Cls = Java.use(name);
+            if (Cls.checkServerTrusted) {
+              Cls.checkServerTrusted.overload(
+                "[Ljava.security.cert.X509Certificate;", "java.lang.String"
+              ).implementation = function () { /* noop → trust all */ };
+              ok(`Strategy 4: hooked ${name}.checkServerTrusted`);
+            }
+          } catch (_) { /* skip */ }
+        },
+        onComplete() {},
+      });
+    } catch (_) { /* enumerateLoadedClasses unavailable */ }
   });
 
   return true;

@@ -527,6 +527,11 @@ def cmd_info(apk_path: Path) -> None:
 
 
 def main(argv: list[str] | None = None) -> None:
+    if sys.version_info < (3, 9):
+        print(f"[-] Python 3.9 or newer is required "
+              f"(running {sys.version.split()[0]})", file=sys.stderr)
+        sys.exit(1)
+
     parser = build_parser()
     args = parser.parse_args(argv)
 

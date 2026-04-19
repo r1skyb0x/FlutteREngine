@@ -632,6 +632,11 @@ Examples
 
 
 def main(argv: list[str] | None = None) -> None:
+    if sys.version_info < (3, 9):
+        print(f"[-] Python 3.9 or newer is required "
+              f"(running {sys.version.split()[0]})", file=sys.stderr)
+        sys.exit(1)
+
     _banner()
 
     parser = _build_parser()
